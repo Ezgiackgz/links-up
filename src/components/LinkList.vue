@@ -13,7 +13,7 @@ const pageCount = ref(totalPages);
 
 const links = ref(getData(linksData));
 const hoveredIndex = ref(null);
-
+const selectedOrder = ref(null);
 function getData(links) {
   const startIndex = (currentPage.value - 1) * limit;
   const endIndex = startIndex + limit;
@@ -36,7 +36,21 @@ watch(() => new URLSearchParams(window.location.search).get('page'), (newValue) 
   links.value = getData(linksData);
 });
 
-const selectedOrder = ref(null);
+
+function sortAndUpdateLinks() {
+  linksData.sort((a, b) => {
+    const totalVotesA = a.upCount + a.downCount;
+    const totalVotesB = b.upCount + b.downCount;
+
+    if (totalVotesB !== totalVotesA) {
+      return totalVotesB - totalVotesA;
+    }
+    return new Date(b.lastVotedDate) - new Date(a.lastVotedDate);
+  });
+
+  links.value = getData(linksData);
+}
+
 function sortLinks() {
   if (selectedOrder.value === '1') {
     linksData.sort((a, b) => (b.upCount + b.downCount) - (a.upCount + a.downCount));
@@ -50,17 +64,18 @@ function sortLinks() {
 
 function upVote(index) {
   linksData[index].upCount++;
+  linksData[index].lastVotedDate = new Date();
   localStorage.setItem('links', JSON.stringify(linksData));
-  linksData.sort((a, b) => (b.upCount + b.downCount) - (a.upCount + a.downCount));
-  links.value = getData(linksData);
+  sortAndUpdateLinks();
 }
 
 function downVote(index) {
   linksData[index].downCount--;
+  linksData[index].lastVotedDate = new Date();
   localStorage.setItem('links', JSON.stringify(linksData));
-  linksData.sort((a, b) => (b.upCount + b.downCount) - (a.upCount + a.downCount));
-  links.value = getData(linksData);
+  sortAndUpdateLinks();
 }
+
 
 function deleteLink(index) {
   linksData.splice(index, 1);
